@@ -347,14 +347,22 @@ class DatabaseProvider with ChangeNotifier {
     // const dbName = 'expense_tc.db';
     // // full path
     // final path = join(dbDirectory, dbName);
+    for(int i=0; i<_categories.length; i++){
+      print(_categories[i].title);
+      // _categories[i].entries = 0;
+      // _categories[i].totalAmount = 0;
+    }
+    _expenses.clear();
+    BudgetCategories.categories.clear();
     final db = await database;
     await db.transaction((txn) async {
-      // Drop the category table
-      await txn.execute('DROP TABLE $cTable');
+      // Drop the category table if it exists
+      await txn.execute('DROP TABLE IF EXISTS $cTable');
 
-      // Drop the expense table
-      await txn.execute('DROP TABLE $eTable');
+      // Drop the expense table if it exists
+      await txn.execute('DROP TABLE IF EXISTS $eTable');
     });
+
     // await _createDb(db, 1);
     await db.transaction((txn) async {
       // category table
@@ -371,12 +379,7 @@ class DatabaseProvider with ChangeNotifier {
         date TEXT,
         category TEXT
       )''');
-      for(int i=0; i<_categories.length; i++){
-        _categories[i].entries = 0;
-        _categories[i].totalAmount = 0;
-      }
-      _expenses.clear();
-      BudgetCategories.categories.clear();
+
 
       // insert the initial categories.
       // this will add all the categories to category table and initialize the 'entries' with 0 and 'totalAmount' to 0.0
@@ -388,6 +391,21 @@ class DatabaseProvider with ChangeNotifier {
         });
       }
     });
+    await db.transaction((txn) async {
+      await txn.query(cTable).then((data) {
+        // 'data' is our fetched value
+        // convert it from "Map<String, object>" to "Map<String, dynamic>"
+        final converted = List<Map<String, dynamic>>.from(data);
+        // create a 'ExpenseCategory'from every 'map' in this 'converted'
+        List<ExpenseCategory> nList = List.generate(converted.length,
+                (index) => ExpenseCategory.fromString(converted[index]));
+        // set the value of 'categories' to 'nList'
+        _categories = nList;
+      });
+    });
+    for(int i=0; i<_categories.length; i++){
+      print(_categories[i].title);
+    }
 
     // _database = await openDatabase(
     //   path,
@@ -395,16 +413,16 @@ class DatabaseProvider with ChangeNotifier {
     //   onCreate: _createDb, // will create this separately
     // );
     final csvData = await csvFile.readAsString();
-    print(csvData);
+    // print(csvData);
     if(csvData != '') {
       List<List<dynamic>> csvTable = CsvToListConverter().convert(csvData);
       List<Map<String, dynamic>> rowsAsMaps = [];
       print('updateshit');
-      for (int i = 0; i < csvTable.length; i++) {
-        for (int j = 0; j < csvTable[i].length; j++) {
-          print(csvTable[i][j]);
-        }
-      }
+      // for (int i = 0; i < csvTable.length; i++) {
+      //   for (int j = 0; j < csvTable[i].length; j++) {
+      //     print(csvTable[i][j]);
+      //   }
+      // }
       int i = 0;
       while (csvTable[i][0] != 'expenseTable') {
         i++;
@@ -425,11 +443,6 @@ class DatabaseProvider with ChangeNotifier {
             date: DateTime.parse(_date.toString()),
             category: _initialValue.toString(),
           );
-          // print(i);
-          // print(filess.title);
-          // print(filess.amount);
-          // print(filess.date);
-          // print(filess.category);
           if (exp.amount < 0) {
             continue;
           }
