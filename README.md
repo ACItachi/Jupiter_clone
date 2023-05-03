@@ -1,16 +1,20 @@
 # jupiter_clone
 
-A new Flutter project.
+Jupiter is a personal finance management application that simplifies the process of tracking and categorizing expenses. In this assignment, you will design and develop a similar app that can take an excel file as input and categorize expenses based on their purpose.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+First connect your mobile device to your pc using any cable.
 
-A few resources to get you started if this is your first Flutter project:
+To run the app:
+    get all the dependencies using
+        - flutter pub get
+    run the app using
+        - flutter run
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+After running flutter run command app directly opens in phone and user can sign in or sign up to use the app.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+After user is signed in, details of the user are stored locally in the app. When the user logs out, we update the details of user in firebase storage.
+When the user signs in again their details are imported from firebase storage based on their uid.
+
+User can add their expenses into the app manually or from an excel file.

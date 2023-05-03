@@ -330,14 +330,71 @@ class DatabaseProvider with ChangeNotifier {
     final File file = File('$documentPath/export.csv');
     await file.writeAsString(csv);
     print('CSV file saved to: ${file.path}');
-    for (int i = 0; i < _expenses.length; i++) {
-      await deleteExpense(_expenses[i].id, _expenses[i].category, _expenses[i].amount);
+    // for(int i=0; i<_categories.length; i++) {
+    //   await db.delete(
+    //     cTable,
+    //     where: 'title = ?',
+    //     whereArgs: [_categories[i].title],
+    //   );
+    // }
+    // for(int i=0; i<_expenses.length; i++) {
+    //   await db.delete(
+    //     eTable,
+    //     where: 'id = ?',
+    //     whereArgs: [_expenses[i].id],
+    //   );
+    // }
+
+    await db.transaction((txn) async {
+      // Drop the category table
+      await txn.execute('DROP TABLE $cTable');
+
+      // Drop the expense table
+      await txn.execute('DROP TABLE $eTable');
+    });
+    // await db.transaction((txn) async {
+    //   // category table
+    //   await txn.execute('''CREATE TABLE $cTable(
+    //     title TEXT,
+    //     entries INTEGER,
+    //     totalAmount TEXT
+    //   )''');
+    //   // expense table
+    //   await txn.execute('''CREATE TABLE $eTable(
+    //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    //     title TEXT,
+    //     amount TEXT,
+    //     date TEXT,
+    //     category TEXT
+    //   )''');
+    //
+    //   // insert the initial categories.
+    //   // this will add all the categories to category table and initialize the 'entries' with 0 and 'totalAmount' to 0.0
+    //   for (int i = 0; i < icons.length; i++) {
+    //     await txn.insert(cTable, {
+    //       'title': icons.keys.toList()[i],
+    //       'entries': 0,
+    //       'totalAmount': (0.0).toString(),
+    //     });
+    //   }
+    // });
+    for(int i=0; i<_categories.length; i++){
+      _categories[i].entries = 0;
+      _categories[i].totalAmount = 0;
     }
-    _expenses.clear();
+    // for (int i = 0; i < _expenses.length; i++) {
+    //    deleteExpense(_expenses[i].id, _expenses[i].category, _expenses[i].amount);
+    // }
+    // _expenses.clear();
     // final databasePath = await getDatabasesPath();
     // final path = '$databasePath/expense_tc.db';
     // print(path);
     // await deleteDatabase(path);
+//     await db.delete(cTable);
+//
+// // Delete all rows from expenseTable
+//     await db.delete(eTable);
+
     print(_expenses.length);
     return file;
 
@@ -345,17 +402,138 @@ class DatabaseProvider with ChangeNotifier {
 //     print('CSV file saved to: ${file.path}');
   }
 
-  Future<List<List<dynamic>>> updateDatabaseFromCsv(File csvFile) async {
+  Future<void> updateDatabaseFromCsv(File csvFile) async {
+    // final dbDirectory = await getDatabasesPath();
+    // // database name
+    // const dbName = 'expense_tc.db';
+    // // full path
+    // final path = join(dbDirectory, dbName);
+    final db = await database;
+    // await _createDb(db, 1);
+    await db.transaction((txn) async {
+      // category table
+      await txn.execute('''CREATE TABLE $cTable(
+        title TEXT,
+        entries INTEGER,
+        totalAmount TEXT
+      )''');
+      // expense table
+      await txn.execute('''CREATE TABLE $eTable(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        amount TEXT,
+        date TEXT,
+        category TEXT
+      )''');
+
+      // insert the initial categories.
+      // this will add all the categories to category table and initialize the 'entries' with 0 and 'totalAmount' to 0.0
+      for (int i = 0; i < icons.length; i++) {
+        await txn.insert(cTable, {
+          'title': icons.keys.toList()[i],
+          'entries': 0,
+          'totalAmount': (0.0).toString(),
+        });
+      }
+    });
+
+    // _database = await openDatabase(
+    //   path,
+    //   version: 1,
+    //   onCreate: _createDb, // will create this separately
+    // );
     final csvData = await csvFile.readAsString();
-    List<List<dynamic>> csvTable = CsvToListConverter().convert(csvData);
-    List<Map<String, dynamic>> rowsAsMaps = [];
-    print('updateshit');
-    for(int i=0; i<csvTable.length; i++){
-      for(int j=0; j<csvTable[i].length; j++){
-        print(csvTable[i][j]);
+    print(csvData);
+    if(csvData != '') {
+      List<List<dynamic>> csvTable = CsvToListConverter().convert(csvData);
+      List<Map<String, dynamic>> rowsAsMaps = [];
+      print('updateshit');
+      for (int i = 0; i < csvTable.length; i++) {
+        for (int j = 0; j < csvTable[i].length; j++) {
+          print(csvTable[i][j]);
+        }
+      }
+      int i = 0;
+      while (csvTable[i][0] != 'expenseTable') {
+        i++;
+      }
+      i++;
+      print('signinscreen');
+      for (; i < csvTable.length; i++) {
+        if (csvTable[i][0] == 'expenseTable') {
+          var _title = csvTable[i][2];
+          var _amount = csvTable[i][3];
+          var _date = csvTable[i][4];
+          var _initialValue = csvTable[i][5];
+
+          final exp = Expense(
+            id: 0,
+            title: _title.toString(),
+            amount: double.parse(_amount.toString()),
+            date: DateTime.parse(_date.toString()),
+            category: _initialValue.toString(),
+          );
+          // print(i);
+          // print(filess.title);
+          // print(filess.amount);
+          // print(filess.date);
+          // print(filess.category);
+          if (exp.amount < 0) {
+            continue;
+          }
+          final db = await database;
+          await db.transaction((txn) async {
+            await txn
+                .insert(
+              eTable,
+              exp.toMap(),
+              conflictAlgorithm: ConflictAlgorithm.replace,
+            )
+                .then((generatedId) {
+              // after inserting in a database. we store it in in-app memory with new expense with generated id
+              final file = Expense(
+                  id: generatedId,
+                  title: exp.title,
+                  amount: exp.amount,
+                  date: exp.date,
+                  category: exp.category);
+              // add it to '_expenses'
+
+              _expenses.add(file);
+
+              // notify the listeners about the change in value of '_expenses'
+              notifyListeners();
+              print(_categories.length);
+              for (int i = 0; i < _categories.length; i++) {
+                print(_categories[i].title);
+                print(_categories[i].totalAmount);
+              }
+              var ex = findCategory(exp.category);
+              print(exp.category + '13');
+              updateCategory(
+                  exp.category, ex.entries + 1, ex.totalAmount + exp.amount);
+              print(exp.category + '23');
+              var budget_check = ex.totalAmount + exp.amount;
+              print(budget_check);
+              var eCI = BudgetCategories.categories.indexWhere((c) =>
+              c.category == exp.category);
+              if (eCI >= 0) {
+                var budget = BudgetCategories.categories[eCI].amount;
+                print(budget);
+                if (budget_check > budget) {
+                  print(budget_check);
+                  triggerNotification(exp.category);
+                };
+              };
+
+              // after we inserted the expense, we need to update the 'entries' and 'totalAmount' of the related 'category'
+
+
+            });
+          });
+        }
       }
     }
-    return csvTable;
 
 // Iterate over each row (skip the first row which contains headers)
 //     for (int i = 1; i < csvTable.length; i++) {

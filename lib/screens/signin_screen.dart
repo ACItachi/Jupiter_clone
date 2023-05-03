@@ -27,6 +27,7 @@ class SignInScreen extends StatefulWidget {
 class _SignInScreenState extends State<SignInScreen> {
   TextEditingController _passwordTextController = TextEditingController();
   TextEditingController _emailTextController = TextEditingController();
+
   void showError1(){
     QuickAlert.show(
         context: context,
@@ -75,6 +76,7 @@ class _SignInScreenState extends State<SignInScreen> {
                       .then((value) async {
                     final user = FirebaseAuth.instance.currentUser;
                     final storage = FirebaseStorage.instance;
+                    final provider = Provider.of<DatabaseProvider>(context, listen: false);
                     try {
                        final ref = storage.ref().child('userdata/${user!.uid}.csv');
                       // // final file = File('${user.uid}.csv');
@@ -94,6 +96,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
                       final metadata = await ref.getMetadata();
 
+
                       if (metadata.fullPath == ref.fullPath) {
                         // File exists, metadata available
                         final downloadUrl = await ref.getDownloadURL();
@@ -107,38 +110,39 @@ class _SignInScreenState extends State<SignInScreen> {
                         final File file = File('$documentPath/imported.csv');
                         await file.writeAsString(csvData);
                         // final List<List<dynamic>> rowsAsMaps = const CsvToListConverter().convert(csvData);
-                        final provider = Provider.of<DatabaseProvider>(context, listen: false);
-                        List<List<dynamic>> csvTable = await provider.updateDatabaseFromCsv(file);
-                        print(csvTable.length);
-                        int i=0;
-                        while(csvTable[i][0] != 'expenseTable'){
-                          i++;
-                        }
-                        i++;
-                        print('signinscreen');
-                        for(; i<csvTable.length; i++){
-                          if(csvTable[i][0] == 'expenseTable'){
-                            var _title = csvTable[i][2];
-                            var _amount = csvTable[i][3];
-                            var _date = csvTable[i][4];
-                            var _initialValue = csvTable[i][5];
 
-                            final filess = Expense(
-                              id: 0,
-                              title: _title.toString(),
-                              amount: double.parse(_amount.toString()),
-                              date: DateTime.parse(_date.toString()),
-                              category: _initialValue.toString(),
-                            );
-                            print(i);
-                            print(filess.title);
-                            print(filess.amount);
-                            print(filess.date);
-                            print(filess.category);
-                            await provider.addExpense(filess);
-                          }
-                        }
+                        await provider.updateDatabaseFromCsv(file);
+                        // print(csvTable.length);
+                        // int i=0;
+                        // while(csvTable[i][0] != 'expenseTable'){
+                        //   i++;
+                        // }
+                        // i++;
+                        // print('signinscreen');
+                        // for(; i<csvTable.length; i++){
+                        //   if(csvTable[i][0] == 'expenseTable'){
+                        //     var _title = csvTable[i][2];
+                        //     var _amount = csvTable[i][3];
+                        //     var _date = csvTable[i][4];
+                        //     var _initialValue = csvTable[i][5];
+                        //
+                        //     final filess = Expense(
+                        //       id: 0,
+                        //       title: _title.toString(),
+                        //       amount: double.parse(_amount.toString()),
+                        //       date: DateTime.parse(_date.toString()),
+                        //       category: _initialValue.toString(),
+                        //     );
+                        //     // print(i);
+                        //     // print(filess.title);
+                        //     // print(filess.amount);
+                        //     // print(filess.date);
+                        //     // print(filess.category);
+                        //     await provider.addExpense(filess);
+                        //   }
+                        // }
                       } else {
+
                         // File does not exist, create empty file with user id as name
                         // final file = File('userdata/exported.csv');
                         // await file.writeAsString('');
@@ -146,6 +150,14 @@ class _SignInScreenState extends State<SignInScreen> {
                         // await ref.putFile(file);
                       }
                     } catch (e) {
+                      print("else here i am");
+                      final Directory? directory = await getExternalStorageDirectory();
+                      final String? documentPath = directory?.path;
+
+                      // Write the CSV to a file
+                      final File file = File('$documentPath/imported.csv');
+                      await file.writeAsString('');
+                      await provider.updateDatabaseFromCsv(file);
                       // final ref = storage.ref().child('userdata/');
                       // final file = File('${user!.uid}.csv');
                       // // await file.writeAsString('');

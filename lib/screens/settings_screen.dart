@@ -12,6 +12,7 @@ import '../widgets/category_screen/category_card.dart';
 import '../widgets/expense_screen/expense_card.dart';
 import 'budgetscreen.dart';
 import 'dart:io';
+import '../main.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({Key? key}) : super(key: key);

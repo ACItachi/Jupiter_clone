@@ -56,6 +56,7 @@ class CategoryScreen extends StatelessWidget {
             backgroundColor: Colors.green[400],
             child: const Icon(Icons.monetization_on),
           ),
+          const SizedBox(height: 16),
           FloatingActionButton(
             onPressed: () {
               showModalBottomSheet(
