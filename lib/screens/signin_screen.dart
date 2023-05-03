@@ -78,7 +78,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     final storage = FirebaseStorage.instance;
                     final provider = Provider.of<DatabaseProvider>(context, listen: false);
                     try {
-                       final ref = storage.ref().child('userdata/${user!.uid}.csv');
+                      final ref = storage.ref().child(
+                          'userdata/${user!.uid}.csv');
                       // // final file = File('${user.uid}.csv');
                       // final downloadUrl = await ref.getDownloadURL();
                       // final response = await http.get(Uri.parse(downloadUrl));
@@ -102,7 +103,8 @@ class _SignInScreenState extends State<SignInScreen> {
                         final downloadUrl = await ref.getDownloadURL();
                         final response = await http.get(Uri.parse(downloadUrl));
                         final csvData = response.body;
-                        final csvRows = const CsvToListConverter().convert(csvData);
+                        final csvRows = const CsvToListConverter().convert(
+                            csvData);
                         final Directory? directory = await getExternalStorageDirectory();
                         final String? documentPath = directory?.path;
 
@@ -112,52 +114,20 @@ class _SignInScreenState extends State<SignInScreen> {
                         // final List<List<dynamic>> rowsAsMaps = const CsvToListConverter().convert(csvData);
 
                         await provider.updateDatabaseFromCsv(file);
-                        // print(csvTable.length);
-                        // int i=0;
-                        // while(csvTable[i][0] != 'expenseTable'){
-                        //   i++;
-                        // }
-                        // i++;
-                        // print('signinscreen');
-                        // for(; i<csvTable.length; i++){
-                        //   if(csvTable[i][0] == 'expenseTable'){
-                        //     var _title = csvTable[i][2];
-                        //     var _amount = csvTable[i][3];
-                        //     var _date = csvTable[i][4];
-                        //     var _initialValue = csvTable[i][5];
-                        //
-                        //     final filess = Expense(
-                        //       id: 0,
-                        //       title: _title.toString(),
-                        //       amount: double.parse(_amount.toString()),
-                        //       date: DateTime.parse(_date.toString()),
-                        //       category: _initialValue.toString(),
-                        //     );
-                        //     // print(i);
-                        //     // print(filess.title);
-                        //     // print(filess.amount);
-                        //     // print(filess.date);
-                        //     // print(filess.category);
-                        //     await provider.addExpense(filess);
-                        //   }
-                        // }
-                      } else {
-
-                        // File does not exist, create empty file with user id as name
-                        // final file = File('userdata/exported.csv');
-                        // await file.writeAsString('');
-                        // final ref = storage.ref().child('userdata/${user.uid}.csv');
-                        // await ref.putFile(file);
                       }
-                    } catch (e) {
-                      print("else here i am");
-                      final Directory? directory = await getExternalStorageDirectory();
-                      final String? documentPath = directory?.path;
+                    }on FirebaseException catch (e) {
+                      if (e.code == 'object-not-found') {
+                        // no object exists at the desired reference, do something else
 
-                      // Write the CSV to a file
-                      final File file = File('$documentPath/imported.csv');
-                      await file.writeAsString('');
-                      await provider.updateDatabaseFromCsv(file);
+                        print("else here i am");
+                        final Directory? directory = await getExternalStorageDirectory();
+                        final String? documentPath = directory?.path;
+
+                        // Write the CSV to a file
+                        final File file = File('$documentPath/imported.csv');
+                        await file.writeAsString('');
+                        await provider.updateDatabaseFromCsv(file);
+                      }
                       // final ref = storage.ref().child('userdata/');
                       // final file = File('${user!.uid}.csv');
                       // // await file.writeAsString('');

@@ -345,13 +345,13 @@ class DatabaseProvider with ChangeNotifier {
     //   );
     // }
 
-    await db.transaction((txn) async {
-      // Drop the category table
-      await txn.execute('DROP TABLE $cTable');
-
-      // Drop the expense table
-      await txn.execute('DROP TABLE $eTable');
-    });
+    // await db.transaction((txn) async {
+    //   // Drop the category table
+    //   await txn.execute('DROP TABLE $cTable');
+    //
+    //   // Drop the expense table
+    //   await txn.execute('DROP TABLE $eTable');
+    // });
     // await db.transaction((txn) async {
     //   // category table
     //   await txn.execute('''CREATE TABLE $cTable(
@@ -409,6 +409,13 @@ class DatabaseProvider with ChangeNotifier {
     // // full path
     // final path = join(dbDirectory, dbName);
     final db = await database;
+    await db.transaction((txn) async {
+      // Drop the category table
+      await txn.execute('DROP TABLE $cTable');
+
+      // Drop the expense table
+      await txn.execute('DROP TABLE $eTable');
+    });
     // await _createDb(db, 1);
     await db.transaction((txn) async {
       // category table
